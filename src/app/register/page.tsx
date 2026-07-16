@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/Button";
+import { AuthLayout } from "@/components/AuthLayout";
+import { EmailField } from "@/components/EmailField";
+import { PasswordInput } from "@/components/PasswordInput";
+import { PasswordStrengthMeter } from "@/components/PasswordStrengthMeter";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,7 +18,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -27,53 +32,52 @@ export default function RegisterPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? "No se pudo crear la cuenta");
       }
+      toast.success("Cuenta creada — bienvenido a Nébula");
       router.push("/");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error inesperado");
+      const message = err instanceof Error ? err.message : "Error inesperado";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="mx-auto max-w-sm px-6 py-16 animate-fade-up">
-      <h1 className="text-2xl font-bold tracking-tight text-text">Crear cuenta</h1>
-      <p className="mt-1 text-sm text-text-secondary">
-        Empiezas con <span className="font-semibold text-accent-alt">$100.00</span> de saldo demo para comprar o rentar.
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm text-text-secondary">
+    <AuthLayout
+      formSide="left"
+      title="Crear cuenta"
+      subtitle="Empiezas con $100.00 de saldo demo para comprar o rentar."
+      footer={
+        <>
+          ¿Ya tienes cuenta?{" "}
+          <Link href="/login" className="font-medium text-accent hover:underline">
+            Inicia sesión
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <label className="flex flex-col gap-1 text-sm text-text-secondary" htmlFor="name">
           Nombre
           <input
+            id="name"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="rounded-lg border border-border bg-surface px-3 py-2 text-text transition-colors focus:border-accent focus:outline-none"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm text-text-secondary">
+        <label className="flex flex-col gap-1 text-sm text-text-secondary" htmlFor="email">
           Email
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-text transition-colors focus:border-accent focus:outline-none"
-          />
+          <EmailField id="email" value={email} onChange={setEmail} />
         </label>
-        <label className="flex flex-col gap-1 text-sm text-text-secondary">
+        <label className="flex flex-col gap-1 text-sm text-text-secondary" htmlFor="password">
           Contraseña
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-text transition-colors focus:border-accent focus:outline-none"
-          />
+          <PasswordInput id="password" value={password} onChange={setPassword} autoComplete="new-password" required minLength={6} />
         </label>
+        <PasswordStrengthMeter password={password} />
 
         {error && <p className="text-sm text-red-500">{error}</p>}
 
@@ -81,13 +85,6 @@ export default function RegisterPage() {
           {loading ? "Creando..." : "Crear cuenta"}
         </Button>
       </form>
-
-      <p className="mt-4 text-sm text-text-secondary">
-        ¿Ya tienes cuenta?{" "}
-        <Link href="/login" className="font-medium text-accent hover:underline">
-          Inicia sesión
-        </Link>
-      </p>
-    </div>
+    </AuthLayout>
   );
 }

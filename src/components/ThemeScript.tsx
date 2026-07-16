@@ -10,6 +10,5 @@ const THEME_INIT = `
 
 /** Sets the theme attribute before first paint so switching modes never flashes the wrong palette. */
 export function ThemeScript() {
-  // eslint-disable-next-line react/no-danger
   return <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />;
 }

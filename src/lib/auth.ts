@@ -10,7 +10,7 @@ export async function getCurrentUser(): Promise<PublicUser | null> {
   if (!session) return null;
 
   const rows = await sql<PublicUser[]>`
-    select id, email, name, role, balance, created_at
+    select id, email, name, role, balance, avatar_url, created_at
     from users
     where id = ${session.userId}
   `;

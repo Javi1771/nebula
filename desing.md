@@ -1,8 +1,8 @@
-# Nebula — Guía de Sistema de Diseño
+# Nébula — Guía de Sistema de Diseño
 
 ## Concepto
 
-**Nebula** toma su identidad literal del nombre: un acento de marca en degradado violeta → magenta que evoca el núcleo y el borde de una nebulosa, sobre un sistema por lo demás muy calmado y neutro — hueso cálido en modo claro, ink profundo (nunca negro puro) en modo oscuro. La referencia es el minimalismo de Apple: tipografía con tracking negativo en titulares grandes, mucho espacio en blanco, sombras suaves y color usado con intención, no como decoración.
+**Nébula** toma su identidad literal del nombre: un acento de marca en degradado violeta → magenta que evoca el núcleo y el borde de una nebulosa, sobre un sistema por lo demás muy calmado y neutro — hueso cálido en modo claro, ink profundo (nunca negro puro) en modo oscuro. La referencia es el minimalismo de Apple: tipografía con tracking negativo en titulares grandes, mucho espacio en blanco, sombras suaves y color usado con intención, no como decoración.
 
 ## Paleta de colores
 
@@ -58,7 +58,7 @@ Header y footer son una "barra de cine" intencionalmente oscura en ambos modos �
 
 ## Logotipo
 
-`NebulaOrb` / `NebulaGlyph` (`src/components/Logo.tsx`): un círculo con degradado radial violeta → magenta y dos motas ("estrellas") blancas, sin caja contenedora en el uso inline (header/footer), con caja `#14121C` redondeada para el favicon/app icon (más legible a 16–32px). El wordmark es "nebula" en minúsculas, `currentColor`, para heredar el color del contexto sin variantes claras/oscuras separadas.
+`NebulaOrb` / `NebulaGlyph` (`src/components/Logo.tsx`): un círculo con degradado radial violeta → magenta y dos motas ("estrellas") blancas, sin caja contenedora en el uso inline (header/footer), con caja `#14121C` redondeada para el favicon/app icon (más legible a 16–32px). El wordmark es "Nébula" en minúsculas, `currentColor`, para heredar el color del contexto sin variantes claras/oscuras separadas.
 
 El favicon/app icon/apple-icon/og-image se generan por código (`app/icon.tsx`, `app/apple-icon.tsx`, `app/opengraph-image.tsx`) con `next/og` — nítidos en cualquier resolución, sin depender de un archivo raster exportado a mano.
 
@@ -70,7 +70,8 @@ El favicon/app icon/apple-icon/og-image se generan por código (`app/icon.tsx`, 
 - **Placeholders de póster**: degradado radial violeta/magenta sobre `dark-surface` (reemplaza el rayado diagonal "wireframe" del sistema anterior).
 - **Estados vacíos**: mensaje + un pequeño círculo de degradado, nunca solo texto plano.
 - **Estados de carga**: skeletons con shimmer, no solo texto "Cargando…".
-- **Checkout / pasarela de pago (demo)**: modal con tarjeta 3D que gira al enfocar el CVC, formateo en vivo del número de tarjeta, detección de marca (Visa/Mastercard/Amex), validación Luhn, y una etiqueta permanente de "pago simulado" — deja claro en todo momento que no se procesan cargos reales.
+- **Checkout / pasarela de pago (demo)**: modal con tarjeta 3D que gira al enfocar el CVC, formateo en vivo del número de tarjeta, detección de marca (Visa/Mastercard/Amex), validación Luhn, selector de banco que retematiza el color de la tarjeta (BBVA azul, Santander rojo, HSBC un rojo distinto, Mercado Pago negro, Rappi Card otro negro, DiDi Card naranja), tarjetas guardadas (solo últimos 4 dígitos en `localStorage`, nunca el número completo) y accesos directos de Google Pay / Apple Pay / Samsung Pay que saltan el formulario. Etiqueta permanente de "pago simulado" en todo momento.
+- **Catálogo TMDB**: películas y series en la misma parrilla, con segmentado Película/Serie, reparto, tráiler embebido, reseñas y recomendaciones acotadas a lo que ya está en catálogo (para no enlazar a fichas inexistentes).
 
 ## Movimiento
 

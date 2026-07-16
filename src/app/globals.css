@@ -1,53 +1,61 @@
 @import "tailwindcss";
 
 /*
-  Nebula design system.
-  Light mode reads as a warm, bone-white "gallery wall". Dark mode inverts to a
-  deep ink-violet, not pure black, so the brand's signature gradient (violet -> magenta)
-  still has room to glow. --dark-surface/--on-dark are intentionally fixed across
-  both modes: the header/hero/footer are a permanent "cinema bar" statement.
+  Nebula design system — "deep ocean" palette.
+  Light mode is a cool mist (derived from #c8d2d7); dark mode is deep ocean ink
+  (#0f2d3c family) so the emerald→cyan signature gradient glows against it.
+  --dark-surface/--on-dark stay fixed across both modes: sidebar/hero/footer are
+  a permanent "cinema bar" statement.
+  Brand hues: #0f2d3c #c8d2d7 #005546 #1ebe91 #69d7b9 #005073 #41cff0 #3cdcf0 #41d791 #4ba591
 */
 
 :root {
   color-scheme: light;
 
-  --background: #f7f3ec;
+  --background: #eef3f5;
   --surface: #ffffff;
-  --surface-elevated: #efe9df;
-  --text: #17151f;
-  --text-secondary: #6e6a78;
-  --border: rgb(23 21 31 / 0.1);
+  --surface-elevated: #dbe4e8;
+  --text: #0f2d3c;
+  --text-secondary: #52707e;
+  --border: rgb(15 45 60 / 0.12);
 
-  --accent: #6c4cf5;
-  --accent-alt: #5636c9;
-  --accent-secondary: #e94e92;
-  --accent-tertiary: #22d3c5;
-  --accent-tertiary-alt: #0f8f85;
+  --accent: #1ebe91;
+  --accent-alt: #005546;
+  --accent-secondary: #41cff0;
+  --accent-secondary-alt: #005073;
+  --accent-tertiary: #3cdcf0;
+  --accent-tertiary-alt: #005546;
+  --accent-soft: #69d7b9;
+  --ink: #0f2d3c;
 
-  --dark-surface: #14121c;
-  --dark-surface-soft: #1d1a28;
-  --on-dark: #f5f1ea;
-  --on-dark-soft: rgb(245 241 234 / 0.68);
+  --dark-surface: #0f2d3c;
+  --dark-surface-soft: #143a4d;
+  --on-dark: #eef3f5;
+  --on-dark-soft: rgb(200 210 215 / 0.72);
 
-  --gradient-nebula: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
-  --shadow-card: 0 1px 2px rgb(23 21 31 / 0.04), 0 12px 24px -12px rgb(23 21 31 / 0.12);
-  --shadow-pop: 0 8px 16px -4px rgb(108 76 245 / 0.25), 0 2px 6px rgb(108 76 245 / 0.15);
+  --logo-ink: #0f2d3c;
+
+  --gradient-nebula: linear-gradient(135deg, #1ebe91 0%, #41cff0 100%);
+  --gradient-deep: linear-gradient(135deg, #005546 0%, #005073 100%);
+  --shadow-card: 0 1px 2px rgb(15 45 60 / 0.05), 0 12px 24px -12px rgb(15 45 60 / 0.14);
+  --shadow-pop: 0 8px 16px -4px rgb(30 190 145 / 0.3), 0 2px 6px rgb(0 80 115 / 0.18);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --background: #0d0b12;
-  --surface: #1a1721;
-  --surface-elevated: #221e2c;
-  --text: #f5f1ea;
-  --text-secondary: #a79fb3;
-  --border: rgb(245 241 234 / 0.12);
+  --background: #081e2a;
+  --surface: #0f2d3c;
+  --surface-elevated: #16394b;
+  --text: #e9f1f4;
+  --text-secondary: #94adb8;
+  --border: rgb(200 210 215 / 0.14);
 
-  --accent-tertiary-alt: #22d3c5;
+  --accent-tertiary-alt: #41d791;
+  --logo-ink: #c8d2d7;
 
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.2), 0 12px 24px -12px rgb(0 0 0 / 0.5);
-  --shadow-pop: 0 8px 20px -4px rgb(108 76 245 / 0.45), 0 2px 8px rgb(0 0 0 / 0.35);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.25), 0 12px 24px -12px rgb(0 0 0 / 0.55);
+  --shadow-pop: 0 8px 20px -4px rgb(30 190 145 / 0.35), 0 2px 8px rgb(0 0 0 / 0.4);
 }
 
 @theme inline {
@@ -63,6 +71,10 @@
   --color-accent-secondary: var(--accent-secondary);
   --color-accent-tertiary: var(--accent-tertiary);
   --color-accent-tertiary-alt: var(--accent-tertiary-alt);
+
+  --color-accent-secondary-alt: var(--accent-secondary-alt);
+  --color-accent-soft: var(--accent-soft);
+  --color-ink: var(--ink);
 
   --color-dark-surface: var(--dark-surface);
   --color-dark-surface-soft: var(--dark-surface-soft);
@@ -105,6 +117,18 @@ body {
   background: var(--gradient-nebula);
 }
 
+.bg-gradient-deep {
+  background: var(--gradient-deep);
+}
+
+/* Decorative ambient orbs (fixed, behind everything). Colors straight from the brand palette. */
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
 .shadow-card {
   box-shadow: var(--shadow-card);
 }
@@ -116,9 +140,19 @@ body {
 /* Soft radial-gradient placeholder standing in for a missing poster, on-brand with the Nebula mark. */
 .placeholder-art {
   background:
-    radial-gradient(circle at 30% 25%, rgb(233 78 146 / 0.35), transparent 55%),
-    radial-gradient(circle at 70% 70%, rgb(108 76 245 / 0.45), transparent 60%),
+    radial-gradient(circle at 30% 25%, rgb(65 207 240 / 0.35), transparent 55%),
+    radial-gradient(circle at 70% 70%, rgb(30 190 145 / 0.45), transparent 60%),
     var(--dark-surface);
+}
+
+/* Horizontal carousels: scrollable but without a visible scrollbar. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Skeleton shimmer for loading states. */
@@ -160,6 +194,37 @@ body {
 
 .animate-fade-up {
   animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Auth screens: the panel/form pair slides horizontally when switching login <-> register. */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(56px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-56px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes scale-in {

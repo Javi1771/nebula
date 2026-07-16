@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { ThemeScript } from "@/components/ThemeScript";
+import { AppToaster } from "@/components/AppToaster";
+import { AppShell } from "@/components/AppShell";
+import { NavTracker } from "@/components/NavTracker";
+import { getCurrentUser } from "@/lib/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,15 +20,17 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
-  title: "Nebula — Compra y renta películas",
-  description: "Catálogo de películas con compra, renta y pago simulado — prueba técnica.",
+  title: "Nébula — Compra y renta películas y series",
+  description: "Catálogo de películas y series con compra, renta y pago simulado — prueba técnica.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html
       lang="es"
@@ -36,9 +41,25 @@ export default function RootLayout({
         <ThemeScript />
       </head>
       <body className="min-h-full flex flex-col">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <AppShell
+          user={
+            user
+              ? {
+                  name: user.name,
+                  email: user.email,
+                  balance: user.balance,
+                  role: user.role,
+                  avatarUrl: user.avatar_url,
+                }
+              : null
+          }
+        >
+          {children}
+        </AppShell>
+        <AppToaster />
+        <Suspense fallback={null}>
+          <NavTracker />
+        </Suspense>
       </body>
     </html>
   );

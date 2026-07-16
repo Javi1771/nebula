@@ -12,7 +12,7 @@ export default async function AdminUsersPage() {
   `;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10 animate-fade-up">
+    <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 lg:px-10 lg:py-10 animate-fade-up">
       <h1 className="text-2xl font-bold tracking-tight text-text">Usuarios</h1>
       <p className="mt-1 text-sm text-text-secondary">Listado de solo lectura.</p>
 

@@ -6,4 +6,4 @@ export const SESSION_COOKIE_NAME = "session";
 
 export const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
-export const CATALOG_PAGE_SIZE = 8;
+export const CATALOG_PAGE_SIZE = 20;

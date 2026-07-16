@@ -2,14 +2,28 @@
 
 import Image from "next/image";
 import { startTransition, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/Button";
 import type { Movie } from "@/lib/types";
 
-interface OmdbSearchResult {
-  Title: string;
-  Year: string;
-  imdbID: string;
-  Poster: string;
+const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
+
+interface TmdbSearchResult {
+  id: number;
+  media_type: "movie" | "tv";
+  title?: string;
+  name?: string;
+  release_date?: string;
+  first_air_date?: string;
+  poster_path: string | null;
+}
+
+function resultTitle(r: TmdbSearchResult) {
+  return r.title ?? r.name ?? "Sin título";
+}
+function resultYear(r: TmdbSearchResult) {
+  const date = r.release_date ?? r.first_air_date;
+  return date ? date.slice(0, 4) : "—";
 }
 
 export function AdminMoviesClient() {
@@ -18,13 +32,14 @@ export function AdminMoviesClient() {
   const [moviesLoading, setMoviesLoading] = useState(true);
   const [moviesError, setMoviesError] = useState<string | null>(null);
 
-  const [omdbQuery, setOmdbQuery] = useState("");
-  const [omdbResults, setOmdbResults] = useState<OmdbSearchResult[]>([]);
-  const [omdbLoading, setOmdbLoading] = useState(false);
-  const [omdbError, setOmdbError] = useState<string | null>(null);
+  const [tmdbQuery, setTmdbQuery] = useState("");
+  const [tmdbResults, setTmdbResults] = useState<TmdbSearchResult[]>([]);
+  const [tmdbLoading, setTmdbLoading] = useState(false);
+  const [tmdbError, setTmdbError] = useState<string | null>(null);
 
   const [importing, setImporting] = useState<{
-    imdbId: string;
+    tmdbId: number;
+    mediaType: "movie" | "tv";
     title: string;
     priceBuy: string;
     priceRent: string;
@@ -70,20 +85,20 @@ export function AdminMoviesClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [movieSearch]);
 
-  async function handleOmdbSearch(e: React.FormEvent) {
+  async function handleTmdbSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (!omdbQuery.trim()) return;
-    setOmdbLoading(true);
-    setOmdbError(null);
+    if (!tmdbQuery.trim()) return;
+    setTmdbLoading(true);
+    setTmdbError(null);
     try {
-      const res = await fetch(`/api/admin/omdb-search?q=${encodeURIComponent(omdbQuery)}`);
+      const res = await fetch(`/api/admin/tmdb-search?q=${encodeURIComponent(tmdbQuery)}`);
       if (!res.ok) throw new Error("Búsqueda fallida");
       const data = await res.json();
-      setOmdbResults(data.results ?? []);
+      setTmdbResults(data.results ?? []);
     } catch {
-      setOmdbError("No se pudo buscar en OMDb.");
+      setTmdbError("No se pudo buscar en TMDB.");
     } finally {
-      setOmdbLoading(false);
+      setTmdbLoading(false);
     }
   }
 
@@ -96,7 +111,8 @@ export function AdminMoviesClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imdbId: importing.imdbId,
+          tmdbId: importing.tmdbId,
+          mediaType: importing.mediaType,
           priceBuy: Number(importing.priceBuy),
           priceRent: Number(importing.priceRent),
         }),
@@ -105,10 +121,13 @@ export function AdminMoviesClient() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? "No se pudo importar");
       }
+      toast.success(`"${importing.title}" agregado al catálogo`);
       setImporting(null);
       await loadMovies();
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : "Error inesperado");
+      const message = err instanceof Error ? err.message : "Error inesperado";
+      setImportError(message);
+      toast.error(message);
     } finally {
       setImportLoading(false);
     }
@@ -128,9 +147,11 @@ export function AdminMoviesClient() {
         }),
       });
       if (!res.ok) throw new Error("No se pudo actualizar");
+      toast.success("Precios actualizados");
       await loadMovies();
     } catch {
       setMoviesError("No se pudo guardar el cambio de precio.");
+      toast.error("No se pudo guardar el cambio de precio.");
     } finally {
       setEdits((prev) => ({ ...prev, [id]: { ...edit, saving: false } }));
     }
@@ -139,49 +160,54 @@ export function AdminMoviesClient() {
   async function deleteMovie(id: string) {
     await fetch(`/api/movies/${id}`, { method: "DELETE" });
     setConfirmingDelete(null);
+    toast("Título eliminado del catálogo");
     await loadMovies();
   }
 
   return (
     <div className="mt-6 flex flex-col gap-10">
       <section>
-        <h2 className="text-lg font-semibold text-text">Agregar película (OMDb)</h2>
-        <form onSubmit={handleOmdbSearch} className="mt-3 flex gap-2">
+        <h2 className="text-lg font-semibold text-text">Agregar título (TMDB)</h2>
+        <form onSubmit={handleTmdbSearch} className="mt-3 flex gap-2">
           <input
-            value={omdbQuery}
-            onChange={(e) => setOmdbQuery(e.target.value)}
-            placeholder="Buscar título en OMDb..."
-            className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text focus:border-accent focus:outline-none"
+            value={tmdbQuery}
+            onChange={(e) => setTmdbQuery(e.target.value)}
+            placeholder="Buscar película o serie en TMDB..."
+            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-accent focus:outline-none"
           />
-          <Button type="submit" disabled={omdbLoading}>
-            {omdbLoading ? "Buscando..." : "Buscar"}
+          <Button type="submit" disabled={tmdbLoading}>
+            {tmdbLoading ? "Buscando..." : "Buscar"}
           </Button>
         </form>
-        {omdbError && <p className="mt-2 text-sm text-red-500">{omdbError}</p>}
+        {tmdbError && <p className="mt-2 text-sm text-red-500">{tmdbError}</p>}
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {omdbResults.map((r) => (
-            <div key={r.imdbID} className="rounded-xl border border-border bg-surface p-3">
+          {tmdbResults.map((r) => (
+            <div key={`${r.media_type}-${r.id}`} className="rounded-xl border border-border bg-surface p-3">
               <div className="relative aspect-[2/3] w-full overflow-hidden rounded">
-                {r.Poster !== "N/A" && (
+                {r.poster_path && (
                   <Image
-                    src={r.Poster}
-                    alt={r.Title}
+                    src={`${TMDB_IMAGE_BASE}/w342${r.poster_path}`}
+                    alt={resultTitle(r)}
                     fill
                     sizes="(max-width: 640px) 50vw, 25vw"
                     className="object-cover"
                   />
                 )}
+                <span className="absolute left-1.5 top-1.5 rounded-full bg-dark-surface/85 px-2 py-0.5 text-[10px] font-semibold uppercase text-on-dark">
+                  {r.media_type === "tv" ? "Serie" : "Película"}
+                </span>
               </div>
-              <p className="mt-2 line-clamp-1 text-sm font-semibold text-text">{r.Title}</p>
-              <p className="text-xs text-text-secondary">{r.Year}</p>
+              <p className="mt-2 line-clamp-1 text-sm font-semibold text-text">{resultTitle(r)}</p>
+              <p className="text-xs text-text-secondary">{resultYear(r)}</p>
               <Button
                 variant="secondary"
                 className="mt-2 w-full"
                 onClick={() =>
                   setImporting({
-                    imdbId: r.imdbID,
-                    title: r.Title,
+                    tmdbId: r.id,
+                    mediaType: r.media_type,
+                    title: resultTitle(r),
                     priceBuy: "12.99",
                     priceRent: "3.99",
                   })
@@ -194,7 +220,7 @@ export function AdminMoviesClient() {
         </div>
 
         {importing && (
-          <div className="mt-4 max-w-sm rounded-lg border border-accent bg-surface p-4">
+          <div className="mt-4 max-w-sm rounded-xl border border-accent bg-surface p-4">
             <p className="text-sm font-semibold text-text">Importar: {importing.title}</p>
             <div className="mt-3 flex gap-3">
               <label className="flex flex-1 flex-col gap-1 text-xs text-text-secondary">
@@ -204,7 +230,7 @@ export function AdminMoviesClient() {
                   step="0.01"
                   value={importing.priceBuy}
                   onChange={(e) => setImporting({ ...importing, priceBuy: e.target.value })}
-                  className="rounded-xl border border-border bg-surface px-2 py-1.5 text-sm text-text"
+                  className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
                 />
               </label>
               <label className="flex flex-1 flex-col gap-1 text-xs text-text-secondary">
@@ -214,7 +240,7 @@ export function AdminMoviesClient() {
                   step="0.01"
                   value={importing.priceRent}
                   onChange={(e) => setImporting({ ...importing, priceRent: e.target.value })}
-                  className="rounded-xl border border-border bg-surface px-2 py-1.5 text-sm text-text"
+                  className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
                 />
               </label>
             </div>
@@ -249,6 +275,7 @@ export function AdminMoviesClient() {
             <thead className="bg-surface text-text-secondary">
               <tr>
                 <th className="px-4 py-3">Título</th>
+                <th className="px-4 py-3">Tipo</th>
                 <th className="px-4 py-3">Género</th>
                 <th className="px-4 py-3">Compra</th>
                 <th className="px-4 py-3">Renta</th>
@@ -261,7 +288,8 @@ export function AdminMoviesClient() {
                 return (
                   <tr key={m.id} className="border-t border-border">
                     <td className="px-4 py-3 text-text">{m.title}</td>
-                    <td className="px-4 py-3 text-text-secondary">{m.genre ?? "—"}</td>
+                    <td className="px-4 py-3 text-text-secondary">{m.media_type === "tv" ? "Serie" : "Película"}</td>
+                    <td className="px-4 py-3 text-text-secondary">{m.genres?.join(", ") ?? "—"}</td>
                     <td className="px-4 py-3">
                       <input
                         type="number"
@@ -320,8 +348,8 @@ export function AdminMoviesClient() {
               })}
               {!moviesLoading && movies.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-text-secondary">
-                    Sin películas en el catálogo.
+                  <td colSpan={6} className="px-4 py-6 text-center text-text-secondary">
+                    Sin títulos en el catálogo.
                   </td>
                 </tr>
               )}

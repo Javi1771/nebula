@@ -10,7 +10,7 @@ export function StatTile({
   return (
     <div
       className={`rounded-2xl border border-border p-5 shadow-card transition-transform duration-300 hover:-translate-y-0.5 ${
-        accent ? "bg-gradient-nebula text-white" : "bg-surface"
+        accent ? "bg-gradient-nebula text-ink" : "bg-surface"
       }`}
     >
       <p

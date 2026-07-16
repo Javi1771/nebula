@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button, ButtonLink } from "@/components/Button";
 import { CheckoutModal } from "@/components/CheckoutModal";
+import { LockIcon } from "@/components/icons";
 
 interface BuyRentButtonsProps {
   movieId: string;
@@ -32,7 +33,13 @@ export function BuyRentButtons({
   if (!isLoggedIn) {
     return (
       <div className="flex flex-wrap gap-3">
-        <ButtonLink href="/login">Inicia sesión para comprar o rentar</ButtonLink>
+        <ButtonLink
+          href="/login"
+          className="px-6 py-3 ring-2 ring-white/20 ring-offset-2 ring-offset-transparent hover:ring-white/40"
+        >
+          <LockIcon className="h-4 w-4" />
+          Inicia sesión para comprar o rentar
+        </ButtonLink>
       </div>
     );
   }
@@ -54,7 +61,7 @@ export function BuyRentButtons({
     <div>
       <div className="flex flex-wrap gap-3">
         <Button onClick={() => setCheckout("buy")}>Comprar ${Number(priceBuy).toFixed(2)}</Button>
-        <Button variant="secondary" onClick={() => setCheckout("rent")}>
+        <Button variant="secondary-dark" onClick={() => setCheckout("rent")}>
           Rentar ${Number(priceRent).toFixed(2)} (48h)
         </Button>
       </div>

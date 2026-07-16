@@ -1,12 +1,16 @@
 import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "secondary-dark" | "ghost" | "danger";
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary: "bg-gradient-nebula text-white shadow-pop hover:brightness-110",
+  primary: "bg-gradient-nebula text-ink shadow-pop hover:brightness-110",
   secondary:
     "bg-transparent border border-border text-text hover:border-accent hover:text-accent",
+  // For buttons living on the always-dark hero: theme-aware text-text turns
+  // invisible there in light mode, so this variant pins on-dark ink.
+  "secondary-dark":
+    "border border-white/25 bg-white/10 text-on-dark backdrop-blur hover:border-accent-tertiary hover:text-accent-tertiary",
   ghost: "bg-transparent text-text-secondary hover:text-accent",
   danger:
     "bg-transparent border border-red-400/40 text-red-500 hover:bg-red-500/10",

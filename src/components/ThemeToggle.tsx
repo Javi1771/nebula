@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const [theme, setTheme] = useState<"light" | "dark" | null>(null);
 
+  // The real theme lives on <html data-theme> (set pre-paint by ThemeScript);
+  // sync it into state after mount since SSR can't know the stored preference.
   useEffect(() => {
-    setTheme((document.documentElement.dataset.theme as "light" | "dark") ?? "light");
+    startTransition(() => {
+      setTheme((document.documentElement.dataset.theme as "light" | "dark") ?? "light");
+    });
   }, []);
 
   function toggle() {
