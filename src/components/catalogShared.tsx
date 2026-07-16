@@ -178,7 +178,9 @@ export function GenreChip({
   );
 }
 
-/** Horizontal snap row with desktop prev/next buttons. */
+/** Horizontal snap row with prev/next buttons on every screen size.
+ * Each button renders only while scrolling in its direction is actually possible,
+ * so rows that fit entirely on screen show no buttons at all. */
 export function ScrollRow({
   children,
   className = "",
@@ -191,12 +193,37 @@ export function ScrollRow({
   padBottom?: string;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const updateArrows = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    setCanLeft(track.scrollLeft > 4);
+    setCanRight(track.scrollLeft + track.clientWidth < track.scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    updateArrows();
+    track.addEventListener("scroll", updateArrows, { passive: true });
+    const observer = new ResizeObserver(updateArrows);
+    observer.observe(track);
+    return () => {
+      track.removeEventListener("scroll", updateArrows);
+      observer.disconnect();
+    };
+  }, [updateArrows]);
 
   function scrollByDir(dir: 1 | -1) {
     const track = trackRef.current;
     if (!track) return;
     track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: "smooth" });
   }
+
+  const buttonClass =
+    "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface text-text shadow-pop transition-all hover:border-accent hover:text-accent-alt active:scale-90 sm:h-10 sm:w-10";
 
   return (
     <div className={`relative ${className}`}>
@@ -207,22 +234,26 @@ export function ScrollRow({
         {children}
       </div>
 
-      <button
-        type="button"
-        onClick={() => scrollByDir(-1)}
-        aria-label="Desplazar a la izquierda"
-        className="absolute -left-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface text-text shadow-pop transition-all hover:border-accent hover:text-accent-alt active:scale-90 sm:flex"
-      >
-        <ChevronRightIcon className="h-4 w-4 rotate-180" />
-      </button>
-      <button
-        type="button"
-        onClick={() => scrollByDir(1)}
-        aria-label="Desplazar a la derecha"
-        className="absolute -right-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface text-text shadow-pop transition-all hover:border-accent hover:text-accent-alt active:scale-90 sm:flex"
-      >
-        <ChevronRightIcon className="h-4 w-4" />
-      </button>
+      {canLeft && (
+        <button
+          type="button"
+          onClick={() => scrollByDir(-1)}
+          aria-label="Desplazar a la izquierda"
+          className={`${buttonClass} -left-2 sm:-left-3`}
+        >
+          <ChevronRightIcon className="h-4 w-4 rotate-180" />
+        </button>
+      )}
+      {canRight && (
+        <button
+          type="button"
+          onClick={() => scrollByDir(1)}
+          aria-label="Desplazar a la derecha"
+          className={`${buttonClass} -right-2 sm:-right-3`}
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 }

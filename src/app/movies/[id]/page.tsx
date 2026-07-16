@@ -80,8 +80,8 @@ export default async function MovieDetailPage({
     (detail?.episode_run_time?.length ? detail.episode_run_time[0] : undefined);
 
   return (
-    <div className="animate-fade-up">
-      <section className="relative overflow-hidden border-b border-white/10 bg-dark-surface text-on-dark">
+    <div className="animate-fade-up lg:px-6 lg:pt-6">
+      <section className="relative overflow-hidden border-b border-white/10 bg-dark-surface text-on-dark lg:rounded-3xl lg:border lg:shadow-pop">
         {movie.backdrop_url && (
           <div className="absolute inset-0">
             <Image src={movie.backdrop_url} alt="" fill sizes="100vw" className="object-cover opacity-60" priority />
