@@ -1,36 +1,165 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nebula — Prueba técnica
 
-## Getting Started
+Demo de una tienda de películas (compra/renta) construida con **Next.js 16 (App Router)**, **TypeScript**, **Tailwind CSS v4** y **PostgreSQL (Neon)**. Incluye autenticación con dos roles (`admin` / `user`), un catálogo alimentado por la API pública de **OMDb**, una API REST completa (GET/POST/PUT/DELETE) documentada más abajo, modo claro/oscuro y una pasarela de pago simulada (sin cargos reales) para comprar o rentar.
 
-First, run the development server:
+> ⚠️ Next.js 16 renombró `middleware.ts` → `proxy.ts` (export `proxy` en vez de `middleware`, runtime Node.js obligatorio). Este repo usa la convención nueva — si buscas el middleware, está en `src/proxy.ts`.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Stack
+
+- **Frontend/Backend**: Next.js 16 App Router — páginas de servidor para lectura directa a la DB, componentes cliente (`"use client"`) que consumen la API REST propia vía `fetch` para las partes interactivas (catálogo con filtros/paginación, compra/renta, CRUD de admin).
+- **Base de datos**: PostgreSQL (Neon), acceso con SQL parametrizado vía [`postgres`](https://github.com/porsager/postgres) (sin ORM).
+- **Auth**: JWT firmado (`jose`) en cookie `httpOnly`, passwords con `bcryptjs`.
+- **Validación**: `zod` en cada endpoint.
+- **API externa**: [OMDb API](https://www.omdbapi.com/) (gratuita) para poblar el catálogo de películas.
+- **Estilos**: Tailwind CSS v4 (config CSS-first vía `@theme` en `globals.css`), paleta de color definida en `desing.md`.
+
+## Requisitos
+
+- Node.js 20+
+- [pnpm](https://pnpm.io/) 9+
+- Una base de datos Postgres (se usó [Neon](https://neon.tech), plan gratuito)
+- Una API key gratuita de [OMDb](http://www.omdbapi.com/apikey.aspx)
+
+## Configuración local
+
+1. Instalar dependencias:
+
+   ```bash
+   pnpm install
+   ```
+
+2. Copiar `.env.example` a `.env.local` y completar las variables:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   | Variable | Descripción |
+   |---|---|
+   | `DATABASE_URL` | Connection string de Postgres (`postgresql://usuario:password@host/db?sslmode=require`) |
+   | `OMDB_API_KEY` | API key gratuita de OMDb |
+   | `SESSION_SECRET` | String aleatorio largo usado para firmar los JWT de sesión |
+
+3. Crear las tablas:
+
+   ```bash
+   pnpm db:migrate
+   ```
+
+4. Poblar usuarios demo y ~10 películas desde OMDb:
+
+   ```bash
+   pnpm db:seed
+   ```
+
+   Credenciales creadas:
+   - **Admin**: `admin@demo.com` / `admin1234`
+   - **Usuario**: `user@demo.com` / `user1234`
+
+5. Levantar el entorno de desarrollo:
+
+   ```bash
+   pnpm dev
+   ```
+
+   La app queda en `http://localhost:3000`.
+
+Otros scripts: `pnpm build` (build de producción + type-check), `pnpm lint`.
+
+## Esquema de base de datos
+
+Tres tablas, normalizadas a 3FN:
+
+```mermaid
+erDiagram
+    USERS ||--o{ PURCHASES : realiza
+    MOVIES ||--o{ PURCHASES : es_objeto_de
+
+    USERS {
+        uuid id PK
+        text email UK
+        text password_hash
+        text name
+        text role "user | admin"
+        numeric balance
+        timestamptz created_at
+    }
+
+    MOVIES {
+        uuid id PK
+        text imdb_id UK
+        text title
+        text year
+        text poster_url
+        text genre
+        text plot
+        text imdb_rating
+        numeric price_buy
+        numeric price_rent
+        timestamptz created_at
+    }
+
+    PURCHASES {
+        uuid id PK
+        uuid user_id FK
+        uuid movie_id FK
+        text type "buy | rent"
+        numeric price
+        timestamptz rented_until
+        timestamptz created_at
+    }
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Justificación 3FN**: cada tabla tiene una clave primaria atómica (`uuid`) y todos los atributos no-clave dependen únicamente de esa clave completa, sin dependencias transitivas. `purchases` se modela como una tabla de hechos independiente (con FKs a `users` y `movies`) en vez de embeber el historial de compras dentro de `users` o `movies` — así se evitan grupos repetidos y anomalías de actualización/borrado. El campo `genre` en `movies` guarda solo el género principal (OMDb devuelve varios separados por coma) para mantener el valor atómico en vez de una lista.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Endpoints de la API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Todas las rutas viven bajo `src/app/api/**/route.ts`. La auth se resuelve vía cookie de sesión (`session`, httpOnly) — no hace falta un header manual al probar con Postman/el navegador mientras la cookie esté seteada (usa "Send cookies" / la misma sesión del navegador, o replica el `Set-Cookie` recibido en `/api/auth/login`).
 
-## Learn More
+| Método | Ruta | Auth | Body / Query | Descripción |
+|---|---|---|---|---|
+| POST | `/api/auth/register` | — | `{ name, email, password }` | Crea una cuenta (siempre `role: "user"`) y abre sesión |
+| POST | `/api/auth/login` | — | `{ email, password }` | Verifica credenciales y setea la cookie de sesión |
+| POST | `/api/auth/logout` | sesión | — | Limpia la cookie de sesión |
+| GET | `/api/movies` | — | `?search=&genre=&offset=&limit=` | Catálogo paginado/filtrado + lista de géneros disponibles |
+| POST | `/api/movies` | admin | `{ imdbId, priceBuy, priceRent }` | Importa una película desde OMDb con precios definidos por el admin |
+| GET | `/api/movies/:id` | — | — | Detalle de una película |
+| PUT | `/api/movies/:id` | admin | `{ priceBuy?, priceRent? }` | Actualiza precios |
+| DELETE | `/api/movies/:id` | admin | — | Elimina una película del catálogo |
+| GET | `/api/purchases` | sesión | — | Historial de compras/rentas del usuario autenticado |
+| POST | `/api/purchases` | sesión | `{ movieId, type: "buy"\|"rent" }` | Compra o renta (valida saldo, duplicados y expiración) |
+| GET | `/api/admin/omdb-search` | admin | `?q=` | Busca títulos en OMDb para importar (la key nunca llega al cliente) |
+| GET | `/api/admin/stats` | admin | — | Estadísticas del dashboard (usuarios, películas, ventas, ingresos) |
+| GET | `/api/users` | admin | — | Listado de usuarios (solo lectura) |
 
-To learn more about Next.js, take a look at the following resources:
+Todos los endpoints devuelven `application/json`; los errores tienen la forma `{ "error": "mensaje", "details"?: {...} }` con el status HTTP correspondiente (400 validación, 401 no autenticado, 402 saldo insuficiente, 403 sin permiso, 404 no encontrado, 409 conflicto).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Middlewares
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Dos capas independientes, siguiendo el patrón oficial de Next.js 16 (el matcher de `proxy.ts` excluye `/api/*`, así que cada capa cubre una superficie distinta):
 
-## Deploy on Vercel
+- **`src/proxy.ts`** (reemplaza `middleware.ts`): protección a nivel de página — redirige a `/login` si falta sesión en `/admin/*` o `/library`, y saca del área admin a quien no tenga `role: "admin"`.
+- **`src/lib/api-middleware.ts`**: `withAuth` / `withAdmin`, higher-order functions que envuelven los route handlers de `/api/*` y devuelven 401/403 antes de ejecutar la lógica del endpoint. `withLogging` es una tercera capa opcional que registra método/ruta/status/duración de cada request — se componen (`withLogging(withAdmin(handler))`).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Seguridad
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Contraseñas con `bcryptjs` (nunca en texto plano).
+- Sesión JWT firmada (`jose`, HS256) en cookie `httpOnly`, `sameSite: lax`, `secure` en producción.
+- SQL parametrizado con tagged templates de `postgres` — sin concatenación de strings, sin inyección SQL.
+- Validación de entrada con `zod` en el boundary de cada endpoint (400 con detalle de errores si falla).
+- Autorización por rol en el middleware de API (`withAdmin`), no solo en el frontend.
+- La API key de OMDb solo se usa server-side (`src/lib/omdb.ts`, marcado `server-only`); nunca se expone al cliente.
+- Secretos solo en `.env.local` (gitignored, nunca committeado).
+
+## Notas de frontend
+
+- El catálogo (`/`) es un componente cliente (`CatalogClient`) que llena la grilla llamando a `/api/movies` vía `fetch`, con tabs de género (cambian la categoría mostrada) y un botón "Cargar más" (paginación por `offset`/`limit`) — todo manipulado con JavaScript/DOM sin recargar la página.
+- Grid responsive (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`) en catálogo, biblioteca y resultados de búsqueda de OMDb.
+- La gestión de películas del admin (`/admin/movies`) es CRUD completo contra la API REST (crear/importar, editar precios inline, eliminar con confirmación), reutilizable 1:1 desde Postman.
+
+## Extras sobre lo mínimo pedido
+
+- JWT de sesión (marcado como opcional en el rubric).
+- Middleware de logging componentizado (`withLogging`) además de auth/admin.
+- "Reproducción simulada" (`/movies/:id/watch`) para completar el flujo de compra/renta sin necesitar un backend de streaming real.
+- Sistema de saldo (`balance`) por usuario para simular transacciones reales sin pasarela de pago.

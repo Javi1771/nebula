@@ -1,26 +1,203 @@
 @import "tailwindcss";
 
+/*
+  Nebula design system.
+  Light mode reads as a warm, bone-white "gallery wall". Dark mode inverts to a
+  deep ink-violet, not pure black, so the brand's signature gradient (violet -> magenta)
+  still has room to glow. --dark-surface/--on-dark are intentionally fixed across
+  both modes: the header/hero/footer are a permanent "cinema bar" statement.
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  --background: #f7f3ec;
+  --surface: #ffffff;
+  --surface-elevated: #efe9df;
+  --text: #17151f;
+  --text-secondary: #6e6a78;
+  --border: rgb(23 21 31 / 0.1);
+
+  --accent: #6c4cf5;
+  --accent-alt: #5636c9;
+  --accent-secondary: #e94e92;
+  --accent-tertiary: #22d3c5;
+  --accent-tertiary-alt: #0f8f85;
+
+  --dark-surface: #14121c;
+  --dark-surface-soft: #1d1a28;
+  --on-dark: #f5f1ea;
+  --on-dark-soft: rgb(245 241 234 / 0.68);
+
+  --gradient-nebula: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+  --shadow-card: 0 1px 2px rgb(23 21 31 / 0.04), 0 12px 24px -12px rgb(23 21 31 / 0.12);
+  --shadow-pop: 0 8px 16px -4px rgb(108 76 245 / 0.25), 0 2px 6px rgb(108 76 245 / 0.15);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #0d0b12;
+  --surface: #1a1721;
+  --surface-elevated: #221e2c;
+  --text: #f5f1ea;
+  --text-secondary: #a79fb3;
+  --border: rgb(245 241 234 / 0.12);
+
+  --accent-tertiary-alt: #22d3c5;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.2), 0 12px 24px -12px rgb(0 0 0 / 0.5);
+  --shadow-pop: 0 8px 20px -4px rgb(108 76 245 / 0.45), 0 2px 8px rgb(0 0 0 / 0.35);
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+
+  --color-accent: var(--accent);
+  --color-accent-alt: var(--accent-alt);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-accent-tertiary: var(--accent-tertiary);
+  --color-accent-tertiary-alt: var(--accent-tertiary-alt);
+
+  --color-dark-surface: var(--dark-surface);
+  --color-dark-surface-soft: var(--dark-surface-soft);
+  --color-on-dark: var(--on-dark);
+  --color-on-dark-soft: var(--on-dark-soft);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Signature brand gradient, used sparingly: logo mark, primary CTA glow, focus rings. */
+.text-gradient-nebula {
+  background: var(--gradient-nebula);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.bg-gradient-nebula {
+  background: var(--gradient-nebula);
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.shadow-pop {
+  box-shadow: var(--shadow-pop);
+}
+
+/* Soft radial-gradient placeholder standing in for a missing poster, on-brand with the Nebula mark. */
+.placeholder-art {
+  background:
+    radial-gradient(circle at 30% 25%, rgb(233 78 146 / 0.35), transparent 55%),
+    radial-gradient(circle at 70% 70%, rgb(108 76 245 / 0.45), transparent 60%),
+    var(--dark-surface);
+}
+
+/* Skeleton shimmer for loading states. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-elevated);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.25), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
+:root[data-theme="dark"] .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.08), transparent);
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes orbit-glow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-2%, 3%) scale(1.05);
+  }
+}
+
+.animate-orbit-glow {
+  animation: orbit-glow 12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
