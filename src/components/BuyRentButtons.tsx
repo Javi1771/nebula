@@ -13,6 +13,7 @@ interface BuyRentButtonsProps {
   priceBuy: string;
   priceRent: string;
   isLoggedIn: boolean;
+  userId: string | null;
   owned: boolean;
   activeRentUntil: string | null;
 }
@@ -24,13 +25,14 @@ export function BuyRentButtons({
   priceBuy,
   priceRent,
   isLoggedIn,
+  userId,
   owned,
   activeRentUntil,
 }: BuyRentButtonsProps) {
   const router = useRouter();
   const [checkout, setCheckout] = useState<"buy" | "rent" | null>(null);
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn || !userId) {
     return (
       <div className="flex flex-wrap gap-3">
         <ButtonLink
@@ -75,6 +77,7 @@ export function BuyRentButtons({
         posterUrl={posterUrl}
         type={checkout ?? "buy"}
         price={checkout === "rent" ? priceRent : priceBuy}
+        userId={userId}
       />
     </div>
   );

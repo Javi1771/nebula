@@ -6,13 +6,18 @@ export interface SavedCard {
   expiry: string;
 }
 
-const STORAGE_KEY = "nebula-saved-cards";
+const STORAGE_PREFIX = "nebula-saved-cards:";
 const MAX_SAVED = 4;
 
-export function getSavedCards(): SavedCard[] {
-  if (typeof window === "undefined") return [];
+/** Cards live under a per-user key so one browser profile never leaks another account's cards. */
+function storageKey(userId: string) {
+  return `${STORAGE_PREFIX}${userId}`;
+}
+
+export function getSavedCards(userId: string): SavedCard[] {
+  if (typeof window === "undefined" || !userId) return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey(userId));
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -22,17 +27,17 @@ export function getSavedCards(): SavedCard[] {
 }
 
 /** Only last4/bank/name/expiry ever touch storage — never the full number or CVC. */
-export function saveCard(card: Omit<SavedCard, "id">): SavedCard[] {
-  const existing = getSavedCards().filter(
+export function saveCard(userId: string, card: Omit<SavedCard, "id">): SavedCard[] {
+  const existing = getSavedCards(userId).filter(
     (c) => !(c.bankId === card.bankId && c.last4 === card.last4)
   );
   const next = [{ ...card, id: crypto.randomUUID() }, ...existing].slice(0, MAX_SAVED);
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  window.localStorage.setItem(storageKey(userId), JSON.stringify(next));
   return next;
 }
 
-export function removeSavedCard(id: string): SavedCard[] {
-  const next = getSavedCards().filter((c) => c.id !== id);
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+export function removeSavedCard(userId: string, id: string): SavedCard[] {
+  const next = getSavedCards(userId).filter((c) => c.id !== id);
+  window.localStorage.setItem(storageKey(userId), JSON.stringify(next));
   return next;
 }

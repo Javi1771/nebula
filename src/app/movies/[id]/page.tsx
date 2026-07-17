@@ -174,6 +174,7 @@ export default async function MovieDetailPage({
                   priceBuy={movie.price_buy}
                   priceRent={movie.price_rent}
                   isLoggedIn={Boolean(user)}
+                  userId={user?.id ?? null}
                   owned={owned}
                   activeRentUntil={activeRentUntil}
                 />

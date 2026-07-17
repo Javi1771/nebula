@@ -32,6 +32,7 @@ interface CheckoutModalProps {
   posterUrl: string | null;
   type: "buy" | "rent";
   price: string | number;
+  userId: string;
 }
 
 interface FormState {
@@ -143,6 +144,7 @@ export function CheckoutModal({
   posterUrl,
   type,
   price,
+  userId,
 }: CheckoutModalProps) {
   const [step, setStep] = useState<Step>("form");
   const [wallet, setWallet] = useState<WalletProvider | null>(null);
@@ -165,7 +167,7 @@ export function CheckoutModal({
         setRemember(false);
         setErrors({});
         setServerError(null);
-        setSavedCards(getSavedCards());
+        setSavedCards(getSavedCards(userId));
       });
       setTimeout(() => nameRef.current?.focus(), 50);
     }
@@ -254,7 +256,9 @@ export function CheckoutModal({
     if (!validate()) return;
     await runPurchase(1200, () => {
       if (remember) {
-        setSavedCards(saveCard({ bankId, last4: digits.slice(-4), name: form.name.trim(), expiry: form.expiry }));
+        setSavedCards(
+          saveCard(userId, { bankId, last4: digits.slice(-4), name: form.name.trim(), expiry: form.expiry })
+        );
         toast("Tarjeta guardada para la próxima vez");
       }
     });
