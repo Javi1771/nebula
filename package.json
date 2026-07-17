@@ -12,6 +12,7 @@
     "db:expand": "tsx scripts/expand-catalog.ts"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "jose": "^6.2.3",

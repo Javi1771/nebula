@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { ThemeScript } from "@/components/ThemeScript";
 import { AppToaster } from "@/components/AppToaster";
@@ -60,6 +61,7 @@ export default async function RootLayout({
         <Suspense fallback={null}>
           <NavTracker />
         </Suspense>
+        <Analytics />
       </body>
     </html>
   );

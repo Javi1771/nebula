@@ -4,6 +4,15 @@ Tienda demo de películas y series (compra/renta) construida con **Next.js 16 (A
 
 > ⚠️ Next.js 16 renombró `middleware.ts` → `proxy.ts` (export `proxy` en vez de `middleware`, runtime Node.js obligatorio). Este repo usa la convención nueva — si buscas el middleware, está en `src/proxy.ts`.
 
+## Demo en vivo
+
+Desplegado en Vercel: **https://nebula-javi1771s-projects.vercel.app**
+
+Credenciales de prueba (mismas que genera `pnpm db:seed`):
+
+- **Admin**: `admin@demo.com` / `admin1234`
+- **Usuario**: `user@demo.com` / `user1234`
+
 ## Clonar el proyecto
 
 ```bash
