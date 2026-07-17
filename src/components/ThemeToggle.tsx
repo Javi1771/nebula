@@ -1,22 +1,22 @@
 "use client";
 
-import { startTransition, useEffect, useState } from "react";
+import { useState } from "react";
 
-export function ThemeToggle({ className = "" }: { className?: string }) {
-  const [theme, setTheme] = useState<"light" | "dark" | null>(null);
+const THEME_COOKIE = "nebula-theme";
 
-  // The real theme lives on <html data-theme> (set pre-paint by ThemeScript);
-  // sync it into state after mount since SSR can't know the stored preference.
-  useEffect(() => {
-    startTransition(() => {
-      setTheme((document.documentElement.dataset.theme as "light" | "dark") ?? "light");
-    });
-  }, []);
+export function ThemeToggle({
+  initialTheme = "light",
+  className = "",
+}: {
+  initialTheme?: "light" | "dark";
+  className?: string;
+}) {
+  const [theme, setTheme] = useState<"light" | "dark">(initialTheme);
 
   function toggle() {
     const next = theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
-    localStorage.setItem("nebula-theme", next);
+    document.cookie = `${THEME_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
     setTheme(next);
   }
 

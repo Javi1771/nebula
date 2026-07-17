@@ -91,7 +91,15 @@ function DesktopNavLink({ item, active }: { item: NavItem; active: boolean }) {
  * App chrome: full sidebar on desktop (logo, nav, user card), slim top bar +
  * bottom tab bar on mobile. Replaces the old sticky header + floating icon dock.
  */
-export function AppShell({ user, children }: { user: ShellUser | null; children: ReactNode }) {
+export function AppShell({
+  user,
+  initialTheme,
+  children,
+}: {
+  user: ShellUser | null;
+  initialTheme: "light" | "dark";
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   const hidden = chromeHiddenOn(pathname);
 
@@ -168,7 +176,7 @@ export function AppShell({ user, children }: { user: ShellUser | null; children:
                   </span>
                 </Link>
                 <span className="hidden group-hover/side:inline-flex">
-                  <ThemeToggle />
+                  <ThemeToggle initialTheme={initialTheme} />
                 </span>
                 <LogoutButton
                   title="Cerrar sesión"
@@ -201,7 +209,7 @@ export function AppShell({ user, children }: { user: ShellUser | null; children:
                   >
                     Iniciar sesión
                   </Link>
-                  <ThemeToggle />
+                  <ThemeToggle initialTheme={initialTheme} />
                 </div>
               </div>
             </>
@@ -220,14 +228,14 @@ export function AppShell({ user, children }: { user: ShellUser | null; children:
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-accent">
                 <WalletIcon className="h-3.5 w-3.5" />${Number(user.balance).toFixed(2)}
               </span>
-              <ThemeToggle />
+              <ThemeToggle initialTheme={initialTheme} />
               <Link href="/account" aria-label="Mi cuenta">
                 <Avatar name={user.name || user.email} avatarUrl={user.avatarUrl} size={30} />
               </Link>
             </>
           ) : (
             <>
-              <ThemeToggle />
+              <ThemeToggle initialTheme={initialTheme} />
               <Link
                 href="/login"
                 className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-on-dark transition-colors hover:border-accent hover:text-accent"

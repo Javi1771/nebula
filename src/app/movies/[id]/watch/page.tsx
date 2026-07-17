@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
+import { z } from "zod";
 import { sql } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { PlaceholderArt } from "@/components/PlaceholderArt";
@@ -12,6 +13,7 @@ export default async function WatchPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!z.string().uuid().safeParse(id).success) notFound();
   const user = await requireUser();
 
   const [movie] = await sql<Movie[]>`select * from movies where id = ${id}`;

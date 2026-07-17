@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { movieImportSchema, movieListQuerySchema } from "@/lib/validation";
 import { jsonError, withAdmin, withLogging } from "@/lib/api-middleware";
 import { getDetail, posterUrl, backdropUrl, titleOf, yearOf } from "@/lib/tmdb";
+import { slugify } from "@/lib/slug";
 import type { Movie } from "@/lib/types";
 
 /** GET /api/movies?search=&genre=&type=&offset=&limit= — public catalog listing, filtered + paginated. */
@@ -26,10 +27,20 @@ export const GET = withLogging(async (request: NextRequest) => {
     title: sql`title asc`,
   }[sort];
 
+  // Genre links in the UI use a clean accent-free slug (e.g. "ciencia-ficcion") instead of the
+  // raw TMDB name, so resolve it back to the exact DB value the `genres` array actually stores.
+  const genreRows = await sql<{ genre: string; count: string }[]>`
+    select unnest(genres) as genre, count(*)::text as count
+    from movies group by 1 order by count(*) desc, genre asc
+  `;
+  const resolvedGenre = genre
+    ? genreRows.find((r) => slugify(r.genre) === slugify(genre))?.genre ?? genre
+    : null;
+
   const items = await sql<Movie[]>`
     select * from movies
     where (${searchPattern}::text is null or title ilike ${searchPattern})
-      and (${genre ?? null}::text is null or ${genre ?? null} = any(genres))
+      and (${resolvedGenre}::text is null or ${resolvedGenre} = any(genres))
       and (${type ?? null}::text is null or media_type = ${type ?? null})
       and (${!trendingDayOnly} or trending_day)
       and (${!trendingWeekOnly} or trending_week)
@@ -40,18 +51,13 @@ export const GET = withLogging(async (request: NextRequest) => {
   const [{ count }] = await sql<{ count: string }[]>`
     select count(*)::text from movies
     where (${searchPattern}::text is null or title ilike ${searchPattern})
-      and (${genre ?? null}::text is null or ${genre ?? null} = any(genres))
+      and (${resolvedGenre}::text is null or ${resolvedGenre} = any(genres))
       and (${type ?? null}::text is null or media_type = ${type ?? null})
       and (${!trendingDayOnly} or trending_day)
       and (${!trendingWeekOnly} or trending_week)
   `;
 
   const total = Number(count);
-
-  const genreRows = await sql<{ genre: string; count: string }[]>`
-    select unnest(genres) as genre, count(*)::text as count
-    from movies group by 1 order by count(*) desc, genre asc
-  `;
 
   return NextResponse.json({
     items,

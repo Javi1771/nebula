@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { z } from "zod";
 import { sql } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
@@ -12,6 +13,7 @@ import { TrailerModal } from "@/components/TrailerModal";
 import { CalendarIcon, TvIcon, FilmIcon, QuoteIcon, LayersIcon, ImageOffIcon } from "@/components/icons";
 import { BackButton } from "@/components/BackButton";
 import { ScrollRow } from "@/components/catalogShared";
+import { slugify } from "@/lib/slug";
 import type { Movie, Purchase } from "@/lib/types";
 
 export default async function MovieDetailPage({
@@ -20,6 +22,7 @@ export default async function MovieDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!z.string().uuid().safeParse(id).success) notFound();
 
   const [movie] = await sql<Movie[]>`select * from movies where id = ${id}`;
   if (!movie) notFound();
@@ -118,7 +121,7 @@ export default async function MovieDetailPage({
                   {movie.genres.map((g) => (
                     <Link
                       key={g}
-                      href={`/search?genre=${encodeURIComponent(g)}`}
+                      href={`/search?genre=${slugify(g)}`}
                       className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-on-dark-soft transition-colors hover:border-accent/60 hover:text-accent"
                     >
                       {g}
@@ -192,7 +195,7 @@ export default async function MovieDetailPage({
         {cast.length > 0 && (
           <section>
             <SectionTitle>Reparto</SectionTitle>
-            <ScrollRow className="mt-5" gapClass="gap-4" padBottom="pb-2">
+            <ScrollRow className="mt-5" gapClass="gap-4" padBottom="pb-2" autoScroll>
               {cast.map((member) => (
                 <div
                   key={member.id}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MovieCard } from "@/components/MovieCard";
 import { SearchIcon } from "@/components/icons";
+import { slugify } from "@/lib/slug";
 import {
   BENTO_GRID_GAP,
   CardSkeleton,
@@ -43,7 +44,7 @@ export function SearchClient({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   useEffect(() => {
     const next = new URLSearchParams();
     if (search) next.set("q", search);
-    if (genre) next.set("genre", genre);
+    if (genre) next.set("genre", slugify(genre));
     if (type) next.set("type", type);
     const qs = next.toString();
     window.history.replaceState(null, "", qs ? `/search?${qs}` : "/search");
@@ -102,8 +103,8 @@ export function SearchClient({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               key={g.name}
               label={g.name}
               count={g.count}
-              active={genre === g.name}
-              onClick={() => setGenre(genre === g.name ? null : g.name)}
+              active={genre !== null && slugify(genre) === slugify(g.name)}
+              onClick={() => setGenre(genre !== null && slugify(genre) === slugify(g.name) ? null : g.name)}
             />
           ))}
         </div>

@@ -180,21 +180,30 @@ export function GenreChip({
 
 /** Horizontal snap row with prev/next buttons on every screen size.
  * Each button renders only while scrolling in its direction is actually possible,
- * so rows that fit entirely on screen show no buttons at all. */
+ * so rows that fit entirely on screen show no buttons at all.
+ *
+ * With `autoScroll`, the arrows are dropped and the row instead glides forward on its
+ * own in a seamless loop (paused while the user hovers, touches, or drags it), on every
+ * viewport size. Only kicks in once the content actually overflows — a row that already
+ * fits the screen stays static, no duplicated cards, no motion. Skipped outright under
+ * `prefers-reduced-motion`. */
 export function ScrollRow({
   children,
   className = "",
   gapClass = "gap-4",
   padBottom = "pb-2",
+  autoScroll = false,
 }: {
   children: React.ReactNode;
   className?: string;
   gapClass?: string;
   padBottom?: string;
+  autoScroll?: boolean;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
+  const [needsLoop, setNeedsLoop] = useState(false);
 
   const updateArrows = useCallback(() => {
     const track = trackRef.current;
@@ -216,6 +225,67 @@ export function ScrollRow({
     };
   }, [updateArrows]);
 
+  // Only duplicate the row (for a seamless loop) once we've confirmed the single copy
+  // actually overflows — measured before the clone exists, so it can't self-trigger.
+  useEffect(() => {
+    if (!autoScroll || needsLoop) return;
+    const track = trackRef.current;
+    if (!track) return;
+    if (track.scrollWidth > track.clientWidth + 1) setNeedsLoop(true);
+  }, [autoScroll, needsLoop, children]);
+
+  useEffect(() => {
+    if (!autoScroll || !needsLoop) return;
+    const track = trackRef.current;
+    if (!track) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const SPEED = 0.5; // px/frame ≈ 30px/s at 60fps
+    let paused = false;
+    let resumeTimer: ReturnType<typeof setTimeout>;
+    let frame = requestAnimationFrame(step);
+
+    function step() {
+      if (!paused && track) {
+        const loopWidth = track.scrollWidth / 2; // exact width of one copy (content is duplicated)
+        if (loopWidth > 1) {
+          track.scrollLeft += SPEED;
+          if (track.scrollLeft >= loopWidth) track.scrollLeft -= loopWidth;
+        }
+      }
+      frame = requestAnimationFrame(step);
+    }
+
+    const pause = () => {
+      clearTimeout(resumeTimer);
+      paused = true;
+    };
+    const scheduleResume = () => {
+      clearTimeout(resumeTimer);
+      resumeTimer = setTimeout(() => {
+        paused = false;
+      }, 2000);
+    };
+
+    track.addEventListener("mouseenter", pause);
+    track.addEventListener("mouseleave", scheduleResume);
+    track.addEventListener("touchstart", pause, { passive: true });
+    track.addEventListener("touchend", scheduleResume, { passive: true });
+    track.addEventListener("pointerdown", pause);
+    track.addEventListener("pointerup", scheduleResume);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(resumeTimer);
+      track.removeEventListener("mouseenter", pause);
+      track.removeEventListener("mouseleave", scheduleResume);
+      track.removeEventListener("touchstart", pause);
+      track.removeEventListener("touchend", scheduleResume);
+      track.removeEventListener("pointerdown", pause);
+      track.removeEventListener("pointerup", scheduleResume);
+    };
+  }, [autoScroll, needsLoop]);
+
   function scrollByDir(dir: 1 | -1) {
     const track = trackRef.current;
     if (!track) return;
@@ -229,12 +299,15 @@ export function ScrollRow({
     <div className={`relative ${className}`}>
       <div
         ref={trackRef}
-        className={`no-scrollbar -mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 sm:-mx-6 sm:px-6 ${gapClass} ${padBottom}`}
+        className={`no-scrollbar -mx-4 flex overflow-x-auto px-4 sm:-mx-6 sm:px-6 ${
+          autoScroll ? "" : "snap-x snap-mandatory"
+        } ${gapClass} ${padBottom}`}
       >
         {children}
+        {autoScroll && needsLoop && <div className="contents">{children}</div>}
       </div>
 
-      {canLeft && (
+      {!autoScroll && canLeft && (
         <button
           type="button"
           onClick={() => scrollByDir(-1)}
@@ -244,7 +317,7 @@ export function ScrollRow({
           <ChevronRightIcon className="h-4 w-4 rotate-180" />
         </button>
       )}
-      {canRight && (
+      {!autoScroll && canRight && (
         <button
           type="button"
           onClick={() => scrollByDir(1)}

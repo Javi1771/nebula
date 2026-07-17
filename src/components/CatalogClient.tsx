@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { MovieCard, formatDuration } from "@/components/MovieCard";
 import { StarIcon } from "@/components/StarIcon";
 import { PlaceholderArt } from "@/components/PlaceholderArt";
+import { slugify } from "@/lib/slug";
 import {
   ChevronRightIcon,
   FilmIcon,
@@ -75,7 +76,7 @@ export function CatalogClient({
 
           {spotlight && <TrendingSpotlight movie={spotlight} />}
 
-          <ScrollRow className="mt-6" gapClass="gap-5" padBottom="pb-4">
+          <ScrollRow className="mt-6" gapClass="gap-5" padBottom="pb-4" autoScroll>
             {restTrending.map((movie, i) => (
               <RankedCard key={movie.id} movie={movie} rank={i + 2} />
             ))}
@@ -91,7 +92,7 @@ export function CatalogClient({
             title="Tendencias de la semana"
             subtitle="Los títulos que dominaron los últimos 7 días"
           />
-          <ScrollRow className="mt-5" gapClass="gap-4" padBottom="pb-2">
+          <ScrollRow className="mt-5" gapClass="gap-4" padBottom="pb-2" autoScroll>
             {trendingWeek.map((movie) => (
               <MiniCard key={movie.id} movie={movie} />
             ))}
@@ -481,7 +482,7 @@ const GENRE_GRADIENTS = [
 function GenreCard({ genre, index }: { genre: GenreCount; index: number }) {
   return (
     <Link
-      href={`/search?genre=${encodeURIComponent(genre.name)}`}
+      href={`/search?genre=${slugify(genre.name)}`}
       className="group relative flex min-h-[96px] flex-col justify-end overflow-hidden rounded-2xl p-4 text-white shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-pop"
       style={{ background: GENRE_GRADIENTS[index % GENRE_GRADIENTS.length] }}
     >
