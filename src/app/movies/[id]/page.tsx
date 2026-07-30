@@ -67,8 +67,16 @@ export default async function MovieDetailPage({
 
   const cast = detail?.credits?.cast?.slice(0, 10) ?? [];
   const reviews = detail?.reviews?.results?.slice(0, 4) ?? [];
-  const recItems = detail?.recommendations?.results?.slice(0, 8) ?? [];
-  const recIds = recItems.map((r) => r.id);
+
+  // "También te puede interesar": mostly clickable titles so users keep browsing, with
+  // just a taste of "Aún no en el catálogo" for discovery. TMDB's own recommendations
+  // rarely land inside our small curated catalog, so we top up with same-genre titles
+  // we actually carry before falling back to a few non-clickable TMDB picks.
+  const REC_TOTAL = 12;
+  const REC_NOT_IN_CATALOG_MAX = 2;
+
+  const rawRecs = detail?.recommendations?.results ?? [];
+  const recIds = rawRecs.map((r) => r.id);
 
   const catalogMatches = recIds.length
     ? await sql<Pick<Movie, "id" | "tmdb_id">[]>`
@@ -77,6 +85,65 @@ export default async function MovieDetailPage({
       `
     : [];
   const catalogByTmdbId = new Map(catalogMatches.map((m) => [m.tmdb_id, m.id]));
+
+  interface RecCard {
+    key: string;
+    title: string;
+    year: string | null;
+    poster: string | null;
+    catalogId: string | null;
+  }
+
+  const clickableFromRecs: RecCard[] = [];
+  const notInCatalog: RecCard[] = [];
+  for (const rec of rawRecs) {
+    const catalogId = catalogByTmdbId.get(rec.id) ?? null;
+    const card: RecCard = {
+      key: `tmdb-${rec.id}`,
+      title: titleOf(rec),
+      year: yearOf(rec),
+      poster: posterUrl(rec.poster_path),
+      catalogId,
+    };
+    (catalogId ? clickableFromRecs : notInCatalog).push(card);
+  }
+
+  const excludeIds = [movie.id, ...clickableFromRecs.map((c) => c.catalogId!)];
+  const needed = Math.max(0, REC_TOTAL - REC_NOT_IN_CATALOG_MAX - clickableFromRecs.length);
+
+  let genreMatches: Movie[] = [];
+  if (needed > 0 && movie.genres && movie.genres.length > 0) {
+    genreMatches = await sql<Movie[]>`
+      select * from movies
+      where media_type = ${movie.media_type}
+        and id <> all(${sql.array(excludeIds)}::uuid[])
+        and genres && ${sql.array(movie.genres)}
+      order by popularity desc nulls last, vote_average desc nulls last
+      limit ${needed}
+    `;
+  } else if (needed > 0) {
+    genreMatches = await sql<Movie[]>`
+      select * from movies
+      where media_type = ${movie.media_type}
+        and id <> all(${sql.array(excludeIds)}::uuid[])
+      order by popularity desc nulls last, vote_average desc nulls last
+      limit ${needed}
+    `;
+  }
+
+  const supplementalCards: RecCard[] = genreMatches.map((m) => ({
+    key: `catalog-${m.id}`,
+    title: m.title,
+    year: m.year,
+    poster: m.poster_url,
+    catalogId: m.id,
+  }));
+
+  const recCards: RecCard[] = [
+    ...clickableFromRecs,
+    ...supplementalCards,
+    ...notInCatalog.slice(0, REC_NOT_IN_CATALOG_MAX),
+  ];
 
   const runtime =
     detail?.runtime ??
@@ -245,51 +312,49 @@ export default async function MovieDetailPage({
           </section>
         )}
 
-        {recItems.length > 0 && (
+        {recCards.length > 0 && (
           <section className="mt-14">
             <SectionTitle>También te puede interesar</SectionTitle>
             <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-              {recItems.map((rec) => {
-                const catalogId = catalogByTmdbId.get(rec.id);
-                const poster = posterUrl(rec.poster_path);
+              {recCards.map((card) => {
                 const content = (
                   <>
                     <div className="relative aspect-[2/3] w-full overflow-hidden">
-                      {poster ? (
+                      {card.poster ? (
                         <Image
-                          src={poster}
-                          alt={titleOf(rec)}
+                          src={card.poster}
+                          alt={card.title}
                           fill
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          className={`object-cover transition-transform duration-500 ${catalogId ? "group-hover:scale-105" : "grayscale opacity-70"}`}
+                          className={`object-cover transition-transform duration-500 ${card.catalogId ? "group-hover:scale-105" : "grayscale opacity-70"}`}
                         />
                       ) : (
                         <PlaceholderArt className="absolute inset-0 rounded-none" />
                       )}
-                      {!catalogId && (
+                      {!card.catalogId && (
                         <span className="absolute inset-x-0 bottom-0 bg-dark-surface/85 px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-on-dark">
                           Aún no en el catálogo
                         </span>
                       )}
                     </div>
                     <div className="p-3">
-                      <p className="line-clamp-1 text-sm font-semibold text-text">{titleOf(rec)}</p>
-                      <p className="text-xs text-text-secondary">{yearOf(rec) ?? "—"}</p>
+                      <p className="line-clamp-1 text-sm font-semibold text-text">{card.title}</p>
+                      <p className="text-xs text-text-secondary">{card.year ?? "—"}</p>
                     </div>
                   </>
                 );
 
-                return catalogId ? (
+                return card.catalogId ? (
                   <Link
-                    key={rec.id}
-                    href={`/movies/${catalogId}`}
+                    key={card.key}
+                    href={`/movies/${card.catalogId}`}
                     className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:shadow-pop"
                   >
                     {content}
                   </Link>
                 ) : (
                   <div
-                    key={rec.id}
+                    key={card.key}
                     className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface opacity-80 shadow-card"
                   >
                     {content}

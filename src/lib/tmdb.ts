@@ -120,6 +120,12 @@ export async function getPopular(mediaType: MediaType, page = 1): Promise<TmdbSe
   return data.results;
 }
 
+/** Movies with a future or recent theatrical release — powers the "Próximamente" rail for titles not yet in the catalog. */
+export async function getUpcoming(page = 1): Promise<TmdbSearchItem[]> {
+  const data = await tmdbFetch<{ results: TmdbSearchItem[] }>("/movie/upcoming", { page });
+  return data.results;
+}
+
 /** Spanish-dubbed trailers are the exception, not the rule, on TMDB — used as a fallback when the es-MX detail call comes back with no videos. */
 export async function getVideos(mediaType: MediaType, id: number | string): Promise<TmdbVideo[]> {
   const data = await tmdbFetch<{ results: TmdbVideo[] }>(`/${mediaType}/${id}/videos`, {}, "en-US");

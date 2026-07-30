@@ -8,6 +8,7 @@ import { StarIcon } from "@/components/StarIcon";
 import { PlaceholderArt } from "@/components/PlaceholderArt";
 import { slugify } from "@/lib/slug";
 import {
+  CalendarIcon,
   ChevronRightIcon,
   FilmIcon,
   FlameIcon,
@@ -28,13 +29,14 @@ import {
   type SortOption,
   type TypeOption,
 } from "@/components/catalogShared";
-import type { GenreCount, Movie } from "@/lib/types";
+import type { GenreCount, Movie, UpcomingItem } from "@/lib/types";
 
 interface CatalogClientProps {
   isLoggedIn?: boolean;
   trendingDay?: Movie[];
   trendingWeek?: Movie[];
   genreCounts?: GenreCount[];
+  upcoming?: UpcomingItem[];
 }
 
 export function CatalogClient({
@@ -42,6 +44,7 @@ export function CatalogClient({
   trendingDay = [],
   trendingWeek = [],
   genreCounts = [],
+  upcoming = [],
 }: CatalogClientProps) {
   const [type, setType] = useState<TypeOption>(null);
   const [sort, setSort] = useState<SortOption>("popular");
@@ -120,6 +123,22 @@ export function CatalogClient({
               <span className="text-sm font-semibold">Ver todos</span>
             </Link>
           </div>
+        </section>
+      )}
+
+      {/* ---------- Próximamente (estrenos TMDB que aún no están en el catálogo) ---------- */}
+      {upcoming.length > 0 && (
+        <section aria-label="Próximamente">
+          <SectionHeading
+            icon={<CalendarIcon className="h-5 w-5" />}
+            title="Próximamente"
+            subtitle="Estrenos que llegarán pronto al catálogo"
+          />
+          <ScrollRow className="mt-5" gapClass="gap-4" padBottom="pb-2" autoScroll>
+            {upcoming.map((item) => (
+              <UpcomingCard key={item.tmdbId} item={item} />
+            ))}
+          </ScrollRow>
         </section>
       )}
 
@@ -465,6 +484,35 @@ function MiniCard({ movie }: { movie: Movie }) {
         </span>
       </span>
     </Link>
+  );
+}
+
+/* ---------- Card no interactiva (próximos estrenos, aún no en catálogo) ---------- */
+
+function UpcomingCard({ item }: { item: UpcomingItem }) {
+  return (
+    <div className="group relative w-32 shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-surface opacity-85 shadow-card sm:w-36">
+      <div className="relative aspect-[2/3]">
+        {item.posterUrl ? (
+          <Image
+            src={item.posterUrl}
+            alt={item.title}
+            fill
+            sizes="144px"
+            className="object-cover grayscale"
+          />
+        ) : (
+          <PlaceholderArt className="absolute inset-0 rounded-none" />
+        )}
+        <span className="absolute inset-x-0 bottom-0 bg-dark-surface/85 px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-on-dark">
+          Próximamente
+        </span>
+      </div>
+      <div className="p-2.5">
+        <span className="block truncate text-xs font-semibold text-text">{item.title}</span>
+        <span className="mt-0.5 block truncate text-[11px] text-text-secondary">{item.year ?? "—"}</span>
+      </div>
+    </div>
   );
 }
 

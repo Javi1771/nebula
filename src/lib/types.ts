@@ -67,3 +67,12 @@ export interface Favorite {
   movie_id: string;
   created_at: string;
 }
+
+/** A TMDB title not yet in our catalog, shown as a non-purchasable "Próximamente" card. */
+export interface UpcomingItem {
+  tmdbId: number;
+  title: string;
+  posterUrl: string | null;
+  year: string | null;
+  voteAverage: number | null;
+}
